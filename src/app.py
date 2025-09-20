@@ -5,12 +5,9 @@ import queue
 import json
 import os
 from datetime import datetime
-import gettext
-import builtins
-from dotenv import load_dotenv
 
 # 匯入我們自己建立的模組
-from ui import AppUI, PersonaManagerWindow, PersonaEditorWindow, StyleManagerWindow, StyleEditorWindow, HistoryManagerWindow
+from ui import AppUI, ApiKeyWindow, PersonaManagerWindow, PersonaEditorWindow, StyleManagerWindow, StyleEditorWindow, HistoryManagerWindow
 import ollama_client
 import gemini_client
 import persona_manager
@@ -18,41 +15,11 @@ import style_manager
 import output_formatter
 
 CONFIG_FILE = "config.json"
-APP_VERSION = "1.5.0"
-
-# --- i18n Setup ---
-def setup_language(lang_code='zh_TW'):
-    """Sets up the application's language."""
-    try:
-        # The 'src' directory where this script lives
-        src_dir = os.path.dirname(os.path.abspath(__file__))
-        # The project root is one level up
-        project_root = os.path.dirname(src_dir)
-        localedir = os.path.join(project_root, 'locales')
-
-        lang = gettext.translation('messages', localedir=localedir, languages=[lang_code], fallback=True)
-        builtins._ = lang.gettext
-    except Exception as e:
-        # Fallback to a dummy function if any error occurs
-        print(f"Warning: Could not load language file for '{lang_code}'. Error: {e}. Falling back to original strings.")
-        builtins._ = lambda s: s
-
-def get_language_from_config():
-    """Reads the language setting from the config file."""
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r') as f:
-                config = json.load(f)
-                return config.get("language", "zh_TW")
-        except (json.JSONDecodeError, IOError):
-            return "zh_TW"
-    return "zh_TW"
-# --- End i18n Setup ---
-
+APP_VERSION = "1.44"
 
 class MainApp:
     """
-    The main application class, responsible for integrating the UI and backend logic.
+    主應用程式類別，負責整合UI和後端邏輯。
     """
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -61,8 +28,8 @@ class MainApp:
         except tk.TclError:
             self.root.geometry("1200x850")
 
-        # The API key is now loaded from .env, so the UI for it is removed.
         commands = {
+            "open_api_key": self.open_api_key_window,
             "open_persona_manager": self.open_persona_manager_window,
             "open_style_manager": self.open_style_manager_window,
             "open_history": self.open_history_window,
@@ -71,7 +38,6 @@ class MainApp:
             "import_personas": lambda: self.import_data("personas"),
             "export_styles": lambda: self.export_data("styles"),
             "import_styles": lambda: self.import_data("styles"),
-            "set_language": self.set_language,
         }
 
         self.ui = AppUI(root, commands=commands, version=APP_VERSION)
@@ -81,19 +47,15 @@ class MainApp:
         self.structured_log = []
         self.personas = []
         self.styles = []
+        self.gemini_api_key = ""
 
-        # Load language from config and API key from environment
-        self.language = get_language_from_config()
-        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
-        if self.gemini_api_key:
-            gemini_client.configure_api_key(self.gemini_api_key)
-
+        self.load_config()
         self.bind_events()
         self.initialize_app()
         self.process_queue()
 
     def bind_events(self):
-        """Binds all UI events."""
+        """集中綁定所有UI事件。"""
         self.ui.start_button.config(command=self.start_conversation_thread)
         self.ui.stop_button.config(command=self.stop_conversation)
         self.ui.save_button.config(command=self.save_dialogue)
@@ -103,20 +65,49 @@ class MainApp:
         self.ui.persona2_combo.bind("<<ComboboxSelected>>", self.on_persona2_select)
         self.ui.style_combo.bind("<<ComboboxSelected>>", self.on_style_select)
 
+    def load_config(self):
+        """從設定檔載入設定，例如API金鑰。"""
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, 'r') as f:
+                    config = json.load(f)
+                    self.gemini_api_key = config.get("gemini_api_key", "")
+                    if self.gemini_api_key:
+                        gemini_client.configure_api_key(self.gemini_api_key)
+            except (json.JSONDecodeError, IOError): pass
+
     def save_config(self):
-        """Saves settings (currently just language) to the config file."""
-        config_data = {
-            "language": self.language
-        }
+        """儲存設定到設定檔。"""
         try:
             with open(CONFIG_FILE, 'w') as f:
-                json.dump(config_data, f, indent=4)
+                json.dump({"gemini_api_key": self.gemini_api_key}, f, indent=4)
         except IOError as e:
-            messagebox.showerror(_("Save Settings Failed"), _("Could not write to config file {}: {}").format(CONFIG_FILE, e))
+            messagebox.showerror("儲存設定失敗", f"無法寫入設定檔 {CONFIG_FILE}: {e}")
 
-    # --- Persona Management ---
+    # --- API 金鑰管理 ---
+    def open_api_key_window(self):
+        """打開API金鑰設定視窗。"""
+        api_window = ApiKeyWindow(self.root)
+        api_window.api_key_entry.insert(0, self.gemini_api_key)
+        api_window.save_button.config(command=lambda: self.save_api_key(api_window))
+
+    def save_api_key(self, window: ApiKeyWindow):
+        """儲存API金鑰並關閉視窗。"""
+        new_key = window.api_key_entry.get().strip()
+        if new_key:
+            if gemini_client.configure_api_key(new_key):
+                self.gemini_api_key = new_key
+                self.save_config()
+                messagebox.showinfo("成功", "Gemini API 金鑰已儲存並驗證成功。")
+                window.destroy()
+            else:
+                messagebox.showerror("驗證失敗", "此Gemini API 金鑰無效，請重新輸入。", parent=window)
+        else:
+            messagebox.showwarning("輸入錯誤", "API金鑰不能為空。", parent=window)
+
+    # --- 角色管理 ---
     def open_persona_manager_window(self):
-        """Opens the persona management window."""
+        """打開角色管理視窗。"""
         self.manager_window = PersonaManagerWindow(self.root)
         self.manager_window.add_button.config(command=self.add_persona)
         self.manager_window.edit_button.config(command=self.edit_persona)
@@ -124,26 +115,26 @@ class MainApp:
         self.refresh_persona_manager_list()
 
     def refresh_persona_manager_list(self):
-        """Refreshes the list in the persona management window."""
+        """刷新角色管理視窗中的列表。"""
         self.manager_window.persona_listbox.delete(0, tk.END)
         user_personas = [p for p in self.personas if not p.get("is_default")]
         for p in user_personas:
             self.manager_window.persona_listbox.insert(tk.END, p["name"])
 
     def add_persona(self):
-        """Opens the add persona window."""
+        """打開新增角色視窗。"""
         editor_window = PersonaEditorWindow(self.manager_window)
         editor_window.save_button.config(command=lambda: self.save_new_persona(editor_window))
 
     def save_new_persona(self, window: PersonaEditorWindow):
-        """Saves a new custom persona and refreshes all relevant UI."""
+        """儲存一個新的自訂角色，並刷新所有相關UI。"""
         name = window.name_entry.get().strip()
         prompt = window.prompt_text.get("1.0", tk.END).strip()
         if not name or not prompt:
-            messagebox.showwarning(_("Input Error"), _("Persona name and prompt cannot be empty."), parent=window)
+            messagebox.showwarning("輸入錯誤", "角色名稱和提示詞不能為空。", parent=window)
             return
         if any(p["name"] == name for p in self.personas):
-            messagebox.showwarning(_("Name Conflict"), _("A persona named '{}' already exists.").format(name), parent=window)
+            messagebox.showwarning("名稱重複", f"名為「{name}」的角色已存在。", parent=window)
             return
         new_persona = {"name": name, "prompt": prompt, "is_default": False}
         self.personas.append(new_persona)
@@ -153,10 +144,10 @@ class MainApp:
         window.destroy()
 
     def edit_persona(self):
-        """Opens the edit persona window."""
+        """打開編輯角色視窗。"""
         selected_indices = self.manager_window.persona_listbox.curselection()
         if not selected_indices:
-            messagebox.showwarning(_("Nothing Selected"), _("Please select a persona from the list to edit."))
+            messagebox.showwarning("未選擇", "請先從列表中選擇一個要編輯的角色。")
             return
         selected_name = self.manager_window.persona_listbox.get(selected_indices[0])
         persona_to_edit = next((p for p in self.personas if p["name"] == selected_name), None)
@@ -165,14 +156,14 @@ class MainApp:
             editor_window.save_button.config(command=lambda: self.save_edited_persona(editor_window, persona_to_edit))
 
     def save_edited_persona(self, window: PersonaEditorWindow, old_persona: dict):
-        """Saves the edited persona data and refreshes all relevant UI."""
+        """儲存被編輯後的角色資料，並刷新所有相關UI。"""
         new_name = window.name_entry.get().strip()
         new_prompt = window.prompt_text.get("1.0", tk.END).strip()
         if not new_name or not new_prompt:
-            messagebox.showwarning(_("Input Error"), _("Persona name and prompt cannot be empty."), parent=window)
+            messagebox.showwarning("輸入錯誤", "角色名稱和提示詞不能為空。", parent=window)
             return
         if new_name != old_persona["name"] and any(p["name"] == new_name for p in self.personas):
-            messagebox.showwarning(_("Name Conflict"), _("A persona named '{}' already exists.").format(new_name), parent=window)
+            messagebox.showwarning("名稱重複", f"名為「{new_name}」的角色已存在。", parent=window)
             return
         old_persona["name"] = new_name
         old_persona["prompt"] = new_prompt
@@ -182,21 +173,20 @@ class MainApp:
         window.destroy()
 
     def delete_persona(self):
-        """Deletes the selected persona and refreshes all relevant UI."""
+        """刪除選定的角色，並刷新所有相關UI。"""
         selected_indices = self.manager_window.persona_listbox.curselection()
         if not selected_indices:
-            messagebox.showwarning(_("Nothing Selected"), _("Please select a persona from the list to delete."))
+            messagebox.showwarning("未選擇", "請先從列表中選擇一個要刪除的角色。")
             return
         selected_name = self.manager_window.persona_listbox.get(selected_indices[0])
-        if messagebox.askyesno(_("Confirm Deletion"), _("Are you sure you want to delete the persona '{}'?").format(selected_name)):
+        if messagebox.askyesno("確認刪除", f"您確定要刪除角色「{selected_name}」嗎？"):
             self.personas = [p for p in self.personas if p["name"] != selected_name]
             persona_manager.save_user_personas(self.personas)
             self.refresh_persona_manager_list()
             self.refresh_main_persona_comboboxes()
 
-    # --- Style Management ---
+    # --- 風格管理 ---
     def open_style_manager_window(self):
-        """Opens the style management window."""
         self.style_manager_win = StyleManagerWindow(self.root)
         self.style_manager_win.add_button.config(command=self.add_style)
         self.style_manager_win.edit_button.config(command=self.edit_style)
@@ -204,25 +194,22 @@ class MainApp:
         self.refresh_style_manager_list()
 
     def refresh_style_manager_list(self):
-        """Refreshes the list in the style management window."""
         self.style_manager_win.style_listbox.delete(0, tk.END)
         for s in self.styles:
             self.style_manager_win.style_listbox.insert(tk.END, s["name"])
 
     def add_style(self):
-        """Opens the add style window."""
         editor = StyleEditorWindow(self.style_manager_win)
         editor.save_button.config(command=lambda: self.save_new_style(editor))
 
     def save_new_style(self, window: StyleEditorWindow):
-        """Saves a new custom style."""
         name = window.name_entry.get().strip()
         prompt = window.prompt_text.get("1.0", tk.END).strip()
         if not name or not prompt:
-            messagebox.showwarning(_("Input Error"), _("Style name and prompt cannot be empty."), parent=window)
+            messagebox.showwarning("輸入錯誤", "風格名稱和指令不能為空。", parent=window)
             return
         if any(s["name"] == name for s in self.styles):
-            messagebox.showwarning(_("Name Conflict"), _("A style named '{}' already exists.").format(name), parent=window)
+            messagebox.showwarning("名稱重複", f"名為「{name}」的風格已存在。", parent=window)
             return
         self.styles.append({"name": name, "prompt": prompt})
         style_manager.save_user_styles(self.styles)
@@ -231,10 +218,9 @@ class MainApp:
         window.destroy()
 
     def edit_style(self):
-        """Opens the edit style window."""
         indices = self.style_manager_win.style_listbox.curselection()
         if not indices:
-            messagebox.showwarning(_("Nothing Selected"), _("Please select a style to edit."))
+            messagebox.showwarning("未選擇", "請先選擇一個要編輯的風格。")
             return
         name = self.style_manager_win.style_listbox.get(indices[0])
         style_to_edit = next((s for s in self.styles if s["name"] == name), None)
@@ -243,14 +229,13 @@ class MainApp:
             editor.save_button.config(command=lambda: self.save_edited_style(editor, style_to_edit))
 
     def save_edited_style(self, window: StyleEditorWindow, old_style: dict):
-        """Saves an edited style."""
         new_name = window.name_entry.get().strip()
         new_prompt = window.prompt_text.get("1.0", tk.END).strip()
         if not new_name or not new_prompt:
-            messagebox.showwarning(_("Input Error"), _("Style name and prompt cannot be empty."), parent=window)
+            messagebox.showwarning("輸入錯誤", "風格名稱和指令不能為空。", parent=window)
             return
         if new_name != old_style["name"] and any(s["name"] == new_name for s in self.styles):
-            messagebox.showwarning(_("Name Conflict"), _("A style named '{}' already exists.").format(new_name), parent=window)
+            messagebox.showwarning("名稱重複", f"名為「{new_name}」的風格已存在。", parent=window)
             return
         old_style["name"] = new_name
         old_style["prompt"] = new_prompt
@@ -260,29 +245,28 @@ class MainApp:
         window.destroy()
 
     def delete_style(self):
-        """Deletes the selected style."""
         indices = self.style_manager_win.style_listbox.curselection()
         if not indices:
-            messagebox.showwarning(_("Nothing Selected"), _("Please select a style to delete."))
+            messagebox.showwarning("未選擇", "請先選擇一個要刪除的風格。")
             return
         name = self.style_manager_win.style_listbox.get(indices[0])
-        if messagebox.askyesno(_("Confirm Deletion"), _("Are you sure you want to delete the style '{}'?").format(name)):
+        if messagebox.askyesno("確認刪除", f"您確定要刪除風格「{name}」嗎？"):
             self.styles = [s for s in self.styles if s["name"] != name]
             style_manager.save_user_styles(self.styles)
             self.refresh_style_manager_list()
             self.refresh_main_style_combobox()
 
-    # --- Main Application Logic ---
+    # --- 主應用邏輯 ---
     def initialize_app(self):
-        """Initializes the application, loading all data."""
+        """初始化應用程式，載入所有資料。"""
         self.refresh_main_persona_comboboxes()
         self.refresh_main_style_combobox()
         self.on_source_changed()
-        self.ui.append_dialogue(_("Please set the parameters and start the dialogue.\n"))
+        self.ui.append_dialogue("請設定參數並開始對話。\n")
 
     def refresh_main_persona_comboboxes(self):
-        """Refreshes the persona dropdowns in the main window."""
-        self.ui.append_dialogue(_("Loading persona list...\n"))
+        """刷新主視窗的角色下拉選單。"""
+        self.ui.append_dialogue("正在載入角色列表...\n")
         self.personas = persona_manager.get_all_personas()
         if self.personas:
             persona_names = [p["name"] for p in self.personas]
@@ -296,18 +280,18 @@ class MainApp:
                 self.ui.persona2_combo.current(0)
             self.on_persona1_select()
             self.on_persona2_select()
-            self.ui.append_dialogue(_("Successfully loaded {} personas.\n").format(len(self.personas)))
+            self.ui.append_dialogue(f"成功載入 {len(self.personas)} 個角色。\n")
         else:
-            self.ui.append_dialogue(_("Warning: No personas found.\n"))
+            self.ui.append_dialogue("警告：找不到任何角色。\n")
 
     def refresh_main_style_combobox(self):
-        """Refreshes the style dropdown in the main window."""
+        """刷新主視窗的風格下拉選單。"""
         self.styles = style_manager.load_user_styles()
         style_names = [s["name"] for s in self.styles]
         self.ui.style_combo['values'] = style_names
 
     def on_source_changed(self, var_name=None, index=None, mode=None):
-        """Asynchronously updates the model dropdown list when the source changes."""
+        """當模型來源改變時，非同步更新對應的模型下拉列表。"""
         # Case 1: Called by a trace (user action), update only the changed AI
         if var_name:
             if var_name == str(self.ui.source1_var):
@@ -320,50 +304,53 @@ class MainApp:
                 return # Not a source variable we care about
 
             if source == "Gemini" and not self.gemini_api_key:
-                messagebox.showwarning(
-                    _("API Key Missing"),
-                    _("You have selected a Gemini model, but no GEMINI_API_KEY was found. Please create a .env file with your key and restart.")
-                )
-                # Revert the source selection
-                if ai_num == 1: self.ui.source1_var.set("Ollama")
-                else: self.ui.source2_var.set("Ollama")
-                return
+                messagebox.showinfo("需要設定", "您選擇了Gemini模型，請先設定您的API金鑰。")
+                self.open_api_key_window()
+                if not self.gemini_api_key: # Revert if no key was entered
+                    if ai_num == 1: self.ui.source1_var.set("Ollama")
+                    else: self.ui.source2_var.set("Ollama")
+                    return
 
             self.update_model_list_for_ai(ai_num, source)
 
         # Case 2: Called manually (e.g., on init), update both
         else:
-            self.update_model_list_for_ai(1, self.ui.source1_var.get())
-            self.update_model_list_for_ai(2, self.ui.source2_var.get())
+            source1 = self.ui.source1_var.get()
+            source2 = self.ui.source2_var.get()
+            if (source1 == "Gemini" or source2 == "Gemini") and not self.gemini_api_key:
+                 # In init, we don't need to pop up the window, just proceed
+                 pass
+            self.update_model_list_for_ai(1, source1)
+            self.update_model_list_for_ai(2, source2)
 
     def update_model_list_for_ai(self, ai_num, source):
-        """Updates the model list for a specific AI based on the source."""
+        """根據來源更新指定AI的模型列表。"""
         if source == "Ollama":
             threading.Thread(target=self.fetch_ollama_models_thread, args=(ai_num,), daemon=True).start()
         else:
             self.update_combobox(ai_num, gemini_client.SUPPORTED_MODELS)
 
     def fetch_ollama_models_thread(self, ai_num):
-        """(Thread task) Fetches Ollama models and puts them in the queue."""
+        """(執行緒工作) 獲取Ollama模型並放入佇列。"""
         models = ollama_client.get_available_models()
         self.queue.put(("update_models", ai_num, models))
 
     def update_combobox(self, ai_num, models):
-        """(Main thread) Updates the specified Combobox."""
+        """(主執行緒) 更新指定的Combobox。"""
         combobox = self.ui.model1_combo if ai_num == 1 else self.ui.model2_combo
-        combobox['values'] = models or [_("No models available")]
+        combobox['values'] = models or ["無可用模型"]
         combobox.set('')
         combobox.current(0)
 
     def start_conversation_thread(self):
-        """Starts the conversation in a new thread."""
+        """在一個新的執行緒中開始對話。"""
         try:
             settings = self.ui.get_settings()
-            if _("No models available") in [settings["model1"], settings["model2"]]:
-                 messagebox.showwarning(_("Model Error"), _("Please ensure a valid model is selected."))
+            if "無可用模型" in [settings["model1"], settings["model2"]]:
+                 messagebox.showwarning("模型錯誤", "請確保選擇了可用的模型。")
                  return
             if ("Gemini" in [settings["source1"], settings["source2"]]) and not self.gemini_api_key:
-                messagebox.showerror(_("API Key Error"), _("Before using a Gemini model, please set a valid API key in 'Settings'."))
+                messagebox.showerror("API金鑰錯誤", "使用Gemini模型前，請先在「設定」中設定有效的API金鑰。")
                 return
             self.ui.clear_dialogue()
             self.ui.set_ui_state(is_running=True)
@@ -371,46 +358,46 @@ class MainApp:
             self.conversation_thread = threading.Thread(target=self.run_conversation_logic, args=(settings,), daemon=True)
             self.conversation_thread.start()
         except Exception as e:
-            messagebox.showerror(_("Unknown Error"), _("An error occurred: {}").format(e))
+            messagebox.showerror("未知錯誤", f"發生錯誤: {e}")
             self.ui.set_ui_state(is_running=False)
 
     def run_conversation_logic(self, settings):
-        """The actual logic for running the conversation. This runs in a separate thread."""
+        """實際執行對話的邏輯。這個函式在一個單獨的執行緒中運行。"""
         self.structured_log = []
         persona1_final_prompt = settings["persona1_prompt"]
         persona2_final_prompt = settings["persona2_prompt"]
         if settings["style_prompt"]:
-            style_directive = _("\n\n--- Dialogue Style Prompt ---\n{}").format(settings['style_prompt'])
+            style_directive = f"\n\n--- 對話風格指令 ---\n{settings['style_prompt']}"
             persona1_final_prompt += style_directive
             persona2_final_prompt += style_directive
         history1 = [{"role": "system", "content": persona1_final_prompt}]
         history2 = [{"role": "system", "content": persona2_final_prompt}]
-        header = (_("Character Introduction\n"
-                  "Character A: Default Persona({persona1_name})\n"
-                  "Prompt:\n{persona1_prompt}\n\n"
-                  "Character B: Default Persona({persona2_name})\n"
-                  "Prompt:\n{persona2_prompt}\n").format(**settings))
+        header = (f"角色介紹\n"
+                  f"角色A：預設角色({settings['persona1_name']})\n"
+                  f"提示詞：\n{settings['persona1_prompt']}\n\n"
+                  f"角色B：預設角色({settings['persona2_name']})\n"
+                  f"提示詞：\n{settings['persona2_prompt']}\n")
         if settings["style_prompt"]:
-            header += _("\nDialogue Style Prompt:\n{}\n").format(settings['style_prompt'])
+            header += f"\n對話風格指令：\n{settings['style_prompt']}\n"
         header += "==========================================\n"
         self.queue_update(header)
         self.structured_log.append({'speaker': 'System', 'content': header})
-        current_message = _("On the topic of: '{}'\nPlease begin the first round of statements on this topic.").format(settings['topic'])
+        current_message = f"關於主題： '{settings['topic']}'\n請您針對此主題，開始進行第一回合的發言。"
         for i in range(settings['turns'] * 2):
             if self.stop_event.is_set():
-                self.queue_update(_("\n--- Dialogue terminated early by user ---\n"))
+                self.queue_update("\n--- 對話被使用者提前終止 ---\n")
                 break
             turn_number = (i // 2) + 1
             if i % 2 == 0:
-                speaker_name = _("Character A: {persona1_name}, Model: {model1}").format(**settings)
-                log_speaker_name = _("Character A: {persona1_name}").format(**settings)
-                self.queue_update(_("\nRound {turn_number} ({speaker_name}):\n").format(turn_number=turn_number, speaker_name=speaker_name))
+                speaker_name = f"角色A：{settings['persona1_name']},模型：{settings['model1']}"
+                log_speaker_name = f"角色A：{settings['persona1_name']}"
+                self.queue_update(f"\n第{turn_number}回合對話 ({speaker_name}):\n")
                 history1.append({"role": "user", "content": current_message})
                 response = (ollama_client.generate_response(settings['model1'], history1)
                             if settings['source1'] == 'Ollama'
                             else gemini_client.generate_response(settings['model1'], persona1_final_prompt, history1))
                 if response is None:
-                    self.queue_update(_("Could not get a response from {}. Dialogue terminated.\n").format(speaker_name))
+                    self.queue_update(f"無法從 {speaker_name} 獲取回應，對話終止。\n")
                     break
                 current_message = response
                 self.queue_update(f"{current_message}\n")
@@ -418,36 +405,35 @@ class MainApp:
                 history1.append({"role": "assistant", "content": current_message})
                 history2.append({"role": "user", "content": current_message})
             else:
-                speaker_name = _("Character B: {persona2_name}, Model: {model2}").format(**settings)
-                log_speaker_name = _("Character B: {persona2_name}").format(**settings)
-                self.queue_update(_("\nRound {turn_number} ({speaker_name}):\n").format(turn_number=turn_number, speaker_name=speaker_name))
+                speaker_name = f"角色B：{settings['persona2_name']},模型：{settings['model2']}"
+                log_speaker_name = f"角色B：{settings['persona2_name']}"
+                self.queue_update(f"\n第{turn_number}回合對話 ({speaker_name}):\n")
                 history2.append({"role": "user", "content": current_message})
                 response = (ollama_client.generate_response(settings['model2'], history2)
                             if settings['source2'] == 'Ollama'
                             else gemini_client.generate_response(settings['model2'], persona2_final_prompt, history2))
                 if response is None:
-                    self.queue_update(_("Could not get a response from {}. Dialogue terminated.\n").format(speaker_name))
+                    self.queue_update(f"無法從 {speaker_name} 獲取回應，對話終止。\n")
                     break
                 current_message = response
                 self.queue_update(f"{current_message}\n")
                 self.structured_log.append({'speaker': log_speaker_name, 'content': current_message})
                 history2.append({"role": "assistant", "content": current_message})
                 history1.append({"role": "user", "content": current_message})
-        self.queue_update(_("\n--- Dialogue End ---\n"))
+        self.queue_update("\n--- 對話結束 ---\n")
 
     def stop_conversation(self):
-        self.ui.append_dialogue(_("\n--- User requested to stop (will take effect after the current turn) ---\n"))
+        self.ui.append_dialogue("\n--- 使用者請求停止（將在目前回合結束後生效） ---\n")
         self.ui.set_ui_state(is_running=False)
 
     def process_queue(self):
-        """Processes messages in the queue, including dialogue content and UI update requests."""
+        """處理佇列中的訊息，包括對話內容和UI更新請求。"""
         try:
             while not self.queue.empty():
                 message_data = self.queue.get_nowait()
                 if isinstance(message_data, str):
                     self.ui.append_dialogue(message_data)
-                    # Check for the translated end-of-dialogue strings
-                    if _("\n--- Dialogue End ---\n") in message_data or _("\n--- Dialogue terminated early by user ---\n") in message_data:
+                    if "--- 對話結束 ---" in message_data or "--- 對話被使用者提前終止 ---" in message_data:
                         self.ui.set_ui_state(is_running=False)
                 elif isinstance(message_data, tuple):
                     msg_type, ai_num, data = message_data
@@ -478,7 +464,7 @@ class MainApp:
                 break
 
     def on_style_select(self, event=None):
-        """Updates the text box content when a style is selected from the dropdown."""
+        """當風格下拉選單被選擇時，更新文字框內容。"""
         selected_name = self.ui.style_combo.get()
         if not selected_name: return
         for style in self.styles:
@@ -487,29 +473,29 @@ class MainApp:
                 self.ui.style_prompt_text.insert("1.0", style["prompt"])
                 break
 
-    # --- History Management ---
+    # --- 歷史紀錄管理 ---
     def open_history_window(self):
-        """Opens the history management window."""
+        """打開歷史紀錄管理視窗。"""
         self.history_win = HistoryManagerWindow(self.root)
         self.history_win.view_button.config(command=self.view_history)
         self.history_win.delete_button.config(command=self.delete_history)
         self.refresh_history_list()
 
     def refresh_history_list(self):
-        """Refreshes the list in the history window."""
+        """刷新歷史紀錄視窗的列表。"""
         self.history_win.history_listbox.delete(0, tk.END)
         if not os.path.exists("history"):
             return
-        # Read the history folder and sort by filename (time) in descending order
+        # 讀取history資料夾，並按檔名(時間)倒序排序
         history_files = sorted([f for f in os.listdir("history") if f.endswith(".txt")], reverse=True)
         for f in history_files:
             self.history_win.history_listbox.insert(tk.END, f)
 
     def view_history(self):
-        """Views the selected history entry."""
+        """檢視選定的歷史紀錄。"""
         indices = self.history_win.history_listbox.curselection()
         if not indices:
-            messagebox.showwarning(_("Nothing Selected"), _("Please select an entry to view."), parent=self.history_win)
+            messagebox.showwarning("未選擇", "請先選擇一筆要檢視的紀錄。", parent=self.history_win)
             return
 
         filename = self.history_win.history_listbox.get(indices[0])
@@ -520,34 +506,34 @@ class MainApp:
                 content = f.read()
             self.ui.clear_dialogue()
             self.ui.append_dialogue(content)
-            self.history_win.destroy() # Close window automatically after viewing
+            self.history_win.destroy() # 檢視後自動關閉視窗
         except Exception as e:
-            messagebox.showerror(_("Read Failed"), _("Could not read history file: {}").format(e), parent=self.history_win)
+            messagebox.showerror("讀取失敗", f"無法讀取歷史紀錄檔案: {e}", parent=self.history_win)
 
     def delete_history(self):
-        """Deletes the selected history entry."""
+        """刪除選定的歷史紀錄。"""
         indices = self.history_win.history_listbox.curselection()
         if not indices:
-            messagebox.showwarning(_("Nothing Selected"), _("Please select an entry to delete."), parent=self.history_win)
+            messagebox.showwarning("未選擇", "請先選擇一筆要刪除的紀錄。", parent=self.history_win)
             return
 
         filename_txt = self.history_win.history_listbox.get(indices[0])
         base_filename = os.path.splitext(filename_txt)[0]
 
-        if messagebox.askyesno(_("Confirm Deletion"), _("Are you sure you want to delete the entry '{}'?\n(This will delete both .txt and .json files)").format(base_filename), parent=self.history_win):
+        if messagebox.askyesno("確認刪除", f"您確定要刪除紀錄「{base_filename}」嗎？\n(將會同時刪除 .txt 和 .json 檔案)", parent=self.history_win):
             try:
                 os.remove(os.path.join("history", filename_txt))
                 os.remove(os.path.join("history", base_filename + ".json"))
-                self.refresh_history_list() # Refresh list
+                self.refresh_history_list() # 刷新列表
             except Exception as e:
-                messagebox.showerror(_("Delete Failed"), _("Could not delete files: {}").format(e), parent=self.history_win)
+                messagebox.showerror("刪除失敗", f"無法刪除檔案: {e}", parent=self.history_win)
 
     def save_dialogue(self):
         if not self.structured_log:
-            messagebox.showwarning(_("No Content"), _("The dialogue history is empty. Nothing to save."))
+            messagebox.showwarning("沒有內容", "對話紀錄是空的，沒有什麼可以儲存。")
             return
-        file_types = [(_('Word Document'), '*.docx'), (_('Excel Spreadsheet'), '*.xlsx'), (_('CSV files'), '*.csv'), (_('Markdown files'), '*.md'), (_('Text files'), '*.txt'), (_('All files'), '*.*')]
-        filepath = filedialog.asksaveasfilename(initialfile=datetime.now().strftime("%Y%m%d%H%M"), filetypes=file_types, defaultextension=".docx", title=_("Save Dialogue History"))
+        file_types = [('Word Document', '*.docx'), ('Excel Spreadsheet', '*.xlsx'), ('CSV files', '*.csv'), ('Markdown files', '*.md'), ('Text files', '*.txt'), ('All files', '*.*')]
+        filepath = filedialog.asksaveasfilename(initialfile=datetime.now().strftime("%Y%m%d%H%M"), filetypes=file_types, defaultextension=".docx", title="儲存對話紀錄")
         if not filepath:
             return
         file_ext = os.path.splitext(filepath)[1].lower()
@@ -565,21 +551,21 @@ class MainApp:
                     content_to_save = output_formatter.to_txt(self.structured_log)
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(content_to_save)
-            messagebox.showinfo(_("Success"), _("Dialogue successfully saved to:\n{}").format(filepath))
+            messagebox.showinfo("成功", f"對話已成功儲存到:\n{filepath}")
         except Exception as e:
-            messagebox.showerror(_("Save Failed"), _("Could not save file: {}").format(e))
+            messagebox.showerror("儲存失敗", f"無法儲存檔案: {e}")
 
-    # --- Export/Import Settings ---
+    # --- 匯出/匯入設定 ---
     def export_data(self, data_type: str):
-        """Exports data of a specified type (personas or styles)."""
+        """匯出指定類型的資料 (personas 或 styles)。"""
         if data_type == "personas":
             data_to_export = [p for p in self.personas if not p.get("is_default")]
             default_filename = "my_personas_backup.json"
-            title = _("Export Persona Library")
+            title = "匯出角色庫"
         elif data_type == "styles":
             data_to_export = self.styles
             default_filename = "my_styles_backup.json"
-            title = _("Export Style Library")
+            title = "匯出風格庫"
         else:
             return
 
@@ -595,16 +581,16 @@ class MainApp:
         try:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data_to_export, f, ensure_ascii=False, indent=4)
-            messagebox.showinfo(_("Export Successful"), _("Data successfully exported to:\n{}").format(filepath))
+            messagebox.showinfo("匯出成功", f"資料已成功匯出至:\n{filepath}")
         except Exception as e:
-            messagebox.showerror(_("Export Failed"), _("Could not save file: {}").format(e))
+            messagebox.showerror("匯出失敗", f"無法儲存檔案: {e}")
 
     def import_data(self, data_type: str):
-        """Imports data of a specified type (personas or styles)."""
+        """匯入指定類型的資料 (personas 或 styles)。"""
         if data_type == "personas":
-            title = _("Import Persona Library")
+            title = "匯入角色庫"
         elif data_type == "styles":
-            title = _("Import Style Library")
+            title = "匯入風格庫"
         else:
             return
 
@@ -619,11 +605,10 @@ class MainApp:
             with open(filepath, 'r', encoding='utf-8') as f:
                 imported_data = json.load(f)
         except Exception as e:
-            messagebox.showerror(_("Import Failed"), _("Could not read or parse file: {}").format(e))
+            messagebox.showerror("匯入失敗", f"無法讀取或解析檔案: {e}")
             return
 
-        title_noun = _("Persona Library") if data_type == "personas" else _("Style Library")
-        if messagebox.askyesno(_("Confirm Import"), _("This will overwrite your existing custom {}. Are you sure you want to continue?").format(title_noun)):
+        if messagebox.askyesno("確認匯入", f"這將會覆蓋您現有的自訂{title.replace('匯入', '')}。您確定要繼續嗎？"):
             if data_type == "personas":
                 self.personas = [p for p in self.personas if p.get("is_default")] + imported_data
                 persona_manager.save_user_personas(self.personas)
@@ -633,33 +618,16 @@ class MainApp:
                 style_manager.save_user_styles(self.styles)
                 self.refresh_main_style_combobox()
 
-            messagebox.showinfo(_("Import Successful"), _("{} has been successfully imported and applied.").format(title_noun))
-
-    def set_language(self, lang_code: str):
-        """Sets the application language and prompts for a restart."""
-        if self.language != lang_code:
-            self.language = lang_code
-            self.save_config()
-            messagebox.showinfo(
-                _("Language Changed"),
-                _("The language has been changed. Please restart the application for the changes to take effect.")
-            )
+            messagebox.showinfo("匯入成功", f"{title.replace('匯入', '')}已成功匯入並應用。")
 
 if __name__ == '__main__':
-    # Load environment variables from .env file
-    load_dotenv()
-
-    # Set up language based on config before creating any UI
-    lang_code = get_language_from_config()
-    setup_language(lang_code)
-
     try:
         root = tk.Tk()
         app = MainApp(root)
         root.mainloop()
     except tk.TclError as e:
-        print(_("Could not start UI, likely running in a headless environment: {}").format(e))
-        print(_("UI startup code skipped."))
+        print(f"無法啟動UI，可能是在無顯示(headless)環境中運行: {e}")
+        print("UI啟動代碼已跳過。")
     except ImportError as e:
-        print(_("Missing module: {}").format(e))
-        print(_("Please ensure all dependencies are installed."))
+        print(f"缺少模組: {e}")
+        print("請確保所有依賴都已安裝。")

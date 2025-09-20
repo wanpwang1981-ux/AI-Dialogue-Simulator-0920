@@ -2,6 +2,3 @@ requests
 google-generativeai
 python-docx
 openpyxl
-Babel
-PyInstaller
-python-dotenv
