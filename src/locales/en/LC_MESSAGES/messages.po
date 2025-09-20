@@ -1,0 +1,642 @@
+# English translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-09-19 23:42+0000\n"
+"PO-Revision-Date: 2025-09-19 23:43+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: src/app.py:101
+msgid "Save Settings Failed"
+msgstr "Save Settings Failed"
+
+#: src/app.py:101
+#, python-brace-format
+msgid "Could not write to config file {}: {}"
+msgstr "Could not write to config file {}: {}"
+
+#: src/app.py:117 src/app.py:578
+msgid "Success"
+msgstr "Success"
+
+#: src/app.py:117
+msgid "Gemini API key saved and verified successfully."
+msgstr "Gemini API key saved and verified successfully."
+
+#: src/app.py:120
+msgid "Validation Failed"
+msgstr "Validation Failed"
+
+#: src/app.py:120
+msgid "This Gemini API key is invalid. Please re-enter."
+msgstr "This Gemini API key is invalid. Please re-enter."
+
+#: src/app.py:122 src/app.py:150 src/app.py:179 src/app.py:229 src/app.py:257
+msgid "Input Error"
+msgstr "Input Error"
+
+#: src/app.py:122
+msgid "API key cannot be empty."
+msgstr "API key cannot be empty."
+
+#: src/app.py:150 src/app.py:179
+msgid "Persona name and prompt cannot be empty."
+msgstr "Persona name and prompt cannot be empty."
+
+#: src/app.py:153 src/app.py:182 src/app.py:232 src/app.py:260
+msgid "Name Conflict"
+msgstr "Name Conflict"
+
+#: src/app.py:153 src/app.py:182
+#, python-brace-format
+msgid "A persona named '{}' already exists."
+msgstr "A persona named '{}' already exists."
+
+#: src/app.py:166 src/app.py:195 src/app.py:244 src/app.py:273 src/app.py:522
+#: src/app.py:541
+msgid "Nothing Selected"
+msgstr "Nothing Selected"
+
+#: src/app.py:166
+msgid "Please select a persona from the list to edit."
+msgstr "Please select a persona from the list to edit."
+
+#: src/app.py:195
+msgid "Please select a persona from the list to delete."
+msgstr "Please select a persona from the list to delete."
+
+#: src/app.py:198 src/app.py:276 src/app.py:547
+msgid "Confirm Deletion"
+msgstr "Confirm Deletion"
+
+#: src/app.py:198
+#, python-brace-format
+msgid "Are you sure you want to delete the persona '{}'?"
+msgstr "Are you sure you want to delete the persona '{}'?"
+
+#: src/app.py:229 src/app.py:257
+msgid "Style name and prompt cannot be empty."
+msgstr "Style name and prompt cannot be empty."
+
+#: src/app.py:232 src/app.py:260
+#, python-brace-format
+msgid "A style named '{}' already exists."
+msgstr "A style named '{}' already exists."
+
+#: src/app.py:244
+msgid "Please select a style to edit."
+msgstr "Please select a style to edit."
+
+#: src/app.py:273
+msgid "Please select a style to delete."
+msgstr "Please select a style to delete."
+
+#: src/app.py:276
+#, python-brace-format
+msgid "Are you sure you want to delete the style '{}'?"
+msgstr "Are you sure you want to delete the style '{}'?"
+
+#: src/app.py:288
+msgid "Please set the parameters and start the dialogue.\n"
+msgstr "Please set the parameters and start the dialogue.\n"
+
+#: src/app.py:292
+msgid "Loading persona list...\n"
+msgstr "Loading persona list...\n"
+
+#: src/app.py:306
+#, python-brace-format
+msgid "Successfully loaded {} personas.\n"
+msgstr "Successfully loaded {} personas.\n"
+
+#: src/app.py:308
+msgid "Warning: No personas found.\n"
+msgstr "Warning: No personas found.\n"
+
+#: src/app.py:330
+msgid "Configuration Required"
+msgstr "Configuration Required"
+
+#: src/app.py:330
+msgid "You have selected a Gemini model. Please set your API key first."
+msgstr "You have selected a Gemini model. Please set your API key first."
+
+#: src/app.py:364 src/app.py:372
+msgid "No models available"
+msgstr "No models available"
+
+#: src/app.py:373
+msgid "Model Error"
+msgstr "Model Error"
+
+#: src/app.py:373
+msgid "Please ensure a valid model is selected."
+msgstr "Please ensure a valid model is selected."
+
+#: src/app.py:376
+msgid "API Key Error"
+msgstr "API Key Error"
+
+#: src/app.py:376
+msgid "Before using a Gemini model, please set a valid API key in 'Settings'."
+msgstr "Before using a Gemini model, please set a valid API key in 'Settings'."
+
+#: src/app.py:384
+msgid "Unknown Error"
+msgstr "Unknown Error"
+
+#: src/app.py:384
+#, python-brace-format
+msgid "An error occurred: {}"
+msgstr "An error occurred: {}"
+
+#: src/app.py:393
+#, python-brace-format
+msgid ""
+"\n"
+"\n"
+"--- Dialogue Style Prompt ---\n"
+"{}"
+msgstr ""
+"\n"
+"\n"
+"--- Dialogue Style Prompt ---\n"
+"{}"
+
+#: src/app.py:398
+#, python-brace-format
+msgid ""
+"Character Introduction\n"
+"Character A: Default Persona({persona1_name})\n"
+"Prompt:\n"
+"{persona1_prompt}\n"
+"\n"
+"Character B: Default Persona({persona2_name})\n"
+"Prompt:\n"
+"{persona2_prompt}\n"
+msgstr ""
+"Character Introduction\n"
+"Character A: Default Persona({persona1_name})\n"
+"Prompt:\n"
+"{persona1_prompt}\n"
+"\n"
+"Character B: Default Persona({persona2_name})\n"
+"Prompt:\n"
+"{persona2_prompt}\n"
+
+#: src/app.py:404
+#, python-brace-format
+msgid ""
+"\n"
+"Dialogue Style Prompt:\n"
+"{}\n"
+msgstr ""
+"\n"
+"Dialogue Style Prompt:\n"
+"{}\n"
+
+#: src/app.py:408
+#, python-brace-format
+msgid ""
+"On the topic of: '{}'\n"
+"Please begin the first round of statements on this topic."
+msgstr ""
+"On the topic of: '{}'\n"
+"Please begin the first round of statements on this topic."
+
+#: src/app.py:411 src/app.py:460
+msgid ""
+"\n"
+"--- Dialogue terminated early by user ---\n"
+msgstr ""
+"\n"
+"--- Dialogue terminated early by user ---\n"
+
+#: src/app.py:415
+#, python-brace-format
+msgid "Character A: {persona1_name}, Model: {model1}"
+msgstr "Character A: {persona1_name}, Model: {model1}"
+
+#: src/app.py:416
+#, python-brace-format
+msgid "Character A: {persona1_name}"
+msgstr "Character A: {persona1_name}"
+
+#: src/app.py:417 src/app.py:433
+#, python-brace-format
+msgid ""
+"\n"
+"Round {turn_number} ({speaker_name}):\n"
+msgstr ""
+"\n"
+"Round {turn_number} ({speaker_name}):\n"
+
+#: src/app.py:423 src/app.py:439
+#, python-brace-format
+msgid "Could not get a response from {}. Dialogue terminated.\n"
+msgstr "Could not get a response from {}. Dialogue terminated.\n"
+
+#: src/app.py:431
+#, python-brace-format
+msgid "Character B: {persona2_name}, Model: {model2}"
+msgstr "Character B: {persona2_name}, Model: {model2}"
+
+#: src/app.py:432
+#, python-brace-format
+msgid "Character B: {persona2_name}"
+msgstr "Character B: {persona2_name}"
+
+#: src/app.py:446 src/app.py:460
+msgid ""
+"\n"
+"--- Dialogue End ---\n"
+msgstr ""
+"\n"
+"--- Dialogue End ---\n"
+
+#: src/app.py:449
+msgid ""
+"\n"
+"--- User requested to stop (will take effect after the current turn) ---\n"
+msgstr ""
+"\n"
+"--- User requested to stop (will take effect after the current turn) ---\n"
+
+#: src/app.py:522
+msgid "Please select an entry to view."
+msgstr "Please select an entry to view."
+
+#: src/app.py:535
+msgid "Read Failed"
+msgstr "Read Failed"
+
+#: src/app.py:535
+#, python-brace-format
+msgid "Could not read history file: {}"
+msgstr "Could not read history file: {}"
+
+#: src/app.py:541
+msgid "Please select an entry to delete."
+msgstr "Please select an entry to delete."
+
+#: src/app.py:547
+#, python-brace-format
+msgid ""
+"Are you sure you want to delete the entry '{}'?\n"
+"(This will delete both .txt and .json files)"
+msgstr ""
+"Are you sure you want to delete the entry '{}'?\n"
+"(This will delete both .txt and .json files)"
+
+#: src/app.py:553
+msgid "Delete Failed"
+msgstr "Delete Failed"
+
+#: src/app.py:553
+#, python-brace-format
+msgid "Could not delete files: {}"
+msgstr "Could not delete files: {}"
+
+#: src/app.py:557
+msgid "No Content"
+msgstr "No Content"
+
+#: src/app.py:557
+msgid "The dialogue history is empty. Nothing to save."
+msgstr "The dialogue history is empty. Nothing to save."
+
+#: src/app.py:559
+msgid "Word Document"
+msgstr "Word Document"
+
+#: src/app.py:559
+msgid "Excel Spreadsheet"
+msgstr "Excel Spreadsheet"
+
+#: src/app.py:559
+msgid "CSV files"
+msgstr "CSV files"
+
+#: src/app.py:559
+msgid "Markdown files"
+msgstr "Markdown files"
+
+#: src/app.py:559
+msgid "Text files"
+msgstr "Text files"
+
+#: src/app.py:559
+msgid "All files"
+msgstr "All files"
+
+#: src/app.py:560
+msgid "Save Dialogue History"
+msgstr "Save Dialogue History"
+
+#: src/app.py:578
+#, python-brace-format
+msgid ""
+"Dialogue successfully saved to:\n"
+"{}"
+msgstr ""
+"Dialogue successfully saved to:\n"
+"{}"
+
+#: src/app.py:580
+msgid "Save Failed"
+msgstr "Save Failed"
+
+#: src/app.py:580 src/app.py:610
+#, python-brace-format
+msgid "Could not save file: {}"
+msgstr "Could not save file: {}"
+
+#: src/app.py:588
+msgid "Export Persona Library"
+msgstr "Export Persona Library"
+
+#: src/app.py:592
+msgid "Export Style Library"
+msgstr "Export Style Library"
+
+#: src/app.py:608
+msgid "Export Successful"
+msgstr "Export Successful"
+
+#: src/app.py:608
+#, python-brace-format
+msgid ""
+"Data successfully exported to:\n"
+"{}"
+msgstr ""
+"Data successfully exported to:\n"
+"{}"
+
+#: src/app.py:610
+msgid "Export Failed"
+msgstr "Export Failed"
+
+#: src/app.py:615
+msgid "Import Persona Library"
+msgstr "Import Persona Library"
+
+#: src/app.py:617
+msgid "Import Style Library"
+msgstr "Import Style Library"
+
+#: src/app.py:632
+msgid "Import Failed"
+msgstr "Import Failed"
+
+#: src/app.py:632
+#, python-brace-format
+msgid "Could not read or parse file: {}"
+msgstr "Could not read or parse file: {}"
+
+#: src/app.py:635
+msgid "Persona Library"
+msgstr "Persona Library"
+
+#: src/app.py:635
+msgid "Style Library"
+msgstr "Style Library"
+
+#: src/app.py:636
+msgid "Confirm Import"
+msgstr "Confirm Import"
+
+#: src/app.py:636
+#, python-brace-format
+msgid ""
+"This will overwrite your existing custom {}. Are you sure you want to "
+"continue?"
+msgstr ""
+"This will overwrite your existing custom {}. Are you sure you want to "
+"continue?"
+
+#: src/app.py:646
+msgid "Import Successful"
+msgstr "Import Successful"
+
+#: src/app.py:646
+#, python-brace-format
+msgid "{} has been successfully imported and applied."
+msgstr "{} has been successfully imported and applied."
+
+#: src/ui.py:15 src/ui.py:323
+msgid "Dialogue History"
+msgstr "Dialogue History"
+
+#: src/ui.py:20
+msgid "Saved Conversations"
+msgstr "Saved Conversations"
+
+#: src/ui.py:33
+msgid "View"
+msgstr "View"
+
+#: src/ui.py:35 src/ui.py:104 src/ui.py:177
+msgid "Delete"
+msgstr "Delete"
+
+#: src/ui.py:37 src/ui.py:106 src/ui.py:179
+msgid "Close"
+msgstr "Close"
+
+#: src/ui.py:47
+msgid "Add/Edit Style"
+msgstr "Add/Edit Style"
+
+#: src/ui.py:55
+msgid "Style Name:"
+msgstr "Style Name:"
+
+#: src/ui.py:60
+msgid "Style Prompt Content:"
+msgstr "Style Prompt Content:"
+
+#: src/ui.py:70 src/ui.py:141 src/ui.py:201
+msgid "Save"
+msgstr "Save"
+
+#: src/ui.py:72 src/ui.py:143 src/ui.py:203
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/ui.py:82 src/ui.py:414
+msgid "My Styles"
+msgstr "My Styles"
+
+#: src/ui.py:87
+msgid "Custom Styles List"
+msgstr "Custom Styles List"
+
+#: src/ui.py:100 src/ui.py:173
+msgid "Add"
+msgstr "Add"
+
+#: src/ui.py:102 src/ui.py:175
+msgid "Edit"
+msgstr "Edit"
+
+#: src/ui.py:116
+msgid "Add/Edit Persona"
+msgstr "Add/Edit Persona"
+
+#: src/ui.py:124
+msgid "Persona Name:"
+msgstr "Persona Name:"
+
+#: src/ui.py:129
+msgid "Persona Prompt:"
+msgstr "Persona Prompt:"
+
+#: src/ui.py:153 src/ui.py:413
+msgid "My Personas"
+msgstr "My Personas"
+
+#: src/ui.py:159
+msgid "Custom Personas List"
+msgstr "Custom Personas List"
+
+#: src/ui.py:189 src/ui.py:412
+msgid "API Key Management"
+msgstr "API Key Management"
+
+#: src/ui.py:194
+msgid "Gemini API Key:"
+msgstr "Gemini API Key:"
+
+#: src/ui.py:220
+#, python-brace-format
+msgid "AI Debate Club v{}"
+msgstr "AI Debate Club v{}"
+
+#: src/ui.py:236
+msgid "AI #1 Settings"
+msgstr "AI #1 Settings"
+
+#: src/ui.py:242 src/ui.py:268
+msgid "Model Source:"
+msgstr "Model Source:"
+
+#: src/ui.py:244 src/ui.py:270
+msgid "Ollama (Local)"
+msgstr "Ollama (Local)"
+
+#: src/ui.py:245 src/ui.py:271
+msgid "Gemini (Cloud)"
+msgstr "Gemini (Cloud)"
+
+#: src/ui.py:249 src/ui.py:275
+msgid "Select Model:"
+msgstr "Select Model:"
+
+#: src/ui.py:253 src/ui.py:279
+msgid "Default Persona:"
+msgstr "Default Persona:"
+
+#: src/ui.py:257 src/ui.py:283
+msgid "Persona Prompt (can be manually edited):"
+msgstr "Persona Prompt (can be manually edited):"
+
+#: src/ui.py:262
+msgid "AI #2 Settings"
+msgstr "AI #2 Settings"
+
+#: src/ui.py:288
+msgid "Dialogue Settings"
+msgstr "Dialogue Settings"
+
+#: src/ui.py:291
+msgid "Dialogue Topic:"
+msgstr "Dialogue Topic:"
+
+#: src/ui.py:300
+msgid "Select Style Template:"
+msgstr "Select Style Template:"
+
+#: src/ui.py:304
+msgid "Dialogue Style Prompt (optional/editable):"
+msgstr "Dialogue Style Prompt (optional/editable):"
+
+#: src/ui.py:311
+msgid "Number of Turns:"
+msgstr "Number of Turns:"
+
+#: src/ui.py:316
+msgid "Start Dialogue"
+msgstr "Start Dialogue"
+
+#: src/ui.py:319
+msgid "Stop Dialogue"
+msgstr "Stop Dialogue"
+
+#: src/ui.py:332
+#, python-brace-format
+msgid "Version: {}"
+msgstr "Version: {}"
+
+#: src/ui.py:338 src/ui.py:391
+msgid "Save Dialogue History..."
+msgstr "Save Dialogue History..."
+
+#: src/ui.py:389
+msgid "File"
+msgstr "File"
+
+#: src/ui.py:390
+msgid "Dialogue History..."
+msgstr "Dialogue History..."
+
+#: src/ui.py:396
+msgid "Export Personas..."
+msgstr "Export Personas..."
+
+#: src/ui.py:397
+msgid "Export Styles..."
+msgstr "Export Styles..."
+
+#: src/ui.py:398
+msgid "Export..."
+msgstr "Export..."
+
+#: src/ui.py:402
+msgid "Import Personas..."
+msgstr "Import Personas..."
+
+#: src/ui.py:403
+msgid "Import Styles..."
+msgstr "Import Styles..."
+
+#: src/ui.py:404
+msgid "Import..."
+msgstr "Import..."
+
+#: src/ui.py:407
+msgid "Exit"
+msgstr "Exit"
+
+#: src/ui.py:411
+msgid "Settings"
+msgstr "Settings"
+
+#: src/app.py:670
+msgid "Language Changed"
+msgstr "Language Changed"
+
+#: src/app.py:671
+msgid "The language has been changed. Please restart the application for the changes to take effect."
+msgstr "The language has been changed. Please restart the application for the changes to take effect."

@@ -56,3 +56,30 @@
 - [ ] 支援更多外部API（例如OpenAI）。
 - [ ] 儲存和載入自訂的「對話風格指令」。
 - [ ] 對話歷史紀錄管理與匯入/匯出。
+
+## Internationalization (i18n)
+
+This project uses `gettext` for internationalization. The UI has been translated into English and Traditional Chinese.
+
+### Managing Translations
+
+If you add or change any user-facing text in the source code (`.py` files), you will need to update the language files.
+
+1.  **Mark strings for translation:** In the Python code, wrap any new user-facing string with the `_()` function. For example: `_("My new string")`.
+2.  **Update and compile language files:** Run the helper script from the root directory:
+    ```bash
+    ./compile_translations.sh
+    ```
+    This script will automatically find new strings, update the `.po` language files, and compile them into the `.mo` files used by the application.
+3.  **Edit translations:** To edit existing translations, modify the `msgstr` fields in the `.po` files located at `src/locales/<language_code>/LC_MESSAGES/messages.po`. After editing, run the `./compile_translations.sh` script again.
+
+### Adding a New Language
+
+1.  Choose the language code (e.g., `fr` for French).
+2.  Initialize the new language files by running:
+    ```bash
+    pybabel init -i src/locales/messages.pot -d src/locales -l fr
+    ```
+3.  Translate the `msgstr` fields in the newly created `src/locales/fr/LC_MESSAGES/messages.po`.
+4.  Add the new language to the language selection menu in `src/ui.py` inside the `_create_menu` method.
+5.  Run `./compile_translations.sh` to compile your new language file.
