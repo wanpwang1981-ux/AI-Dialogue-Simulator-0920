@@ -10,7 +10,7 @@ import builtins
 from dotenv import load_dotenv
 
 # 匯入我們自己建立的模組
-from ui import AppUI, ApiKeyWindow, PersonaManagerWindow, PersonaEditorWindow, StyleManagerWindow, StyleEditorWindow, HistoryManagerWindow
+from ui import AppUI, PersonaManagerWindow, PersonaEditorWindow, StyleManagerWindow, StyleEditorWindow, HistoryManagerWindow
 import ollama_client
 import gemini_client
 import persona_manager
