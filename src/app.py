@@ -24,12 +24,13 @@ APP_VERSION = "1.5.0"
 def setup_language(lang_code='zh_TW'):
     """Sets up the application's language."""
     try:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        mo_file_path = os.path.join(script_dir, 'locales', lang_code, 'LC_MESSAGES', 'messages.mo')
+        # The 'src' directory where this script lives
+        src_dir = os.path.dirname(os.path.abspath(__file__))
+        # The project root is one level up
+        project_root = os.path.dirname(src_dir)
+        localedir = os.path.join(project_root, 'locales')
 
-        with open(mo_file_path, 'rb') as f:
-            lang = gettext.GNUTranslations(f)
-
+        lang = gettext.translation('messages', localedir=localedir, languages=[lang_code], fallback=True)
         builtins._ = lang.gettext
     except Exception as e:
         # Fallback to a dummy function if any error occurs
