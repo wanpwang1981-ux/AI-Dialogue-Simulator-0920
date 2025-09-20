@@ -180,29 +180,6 @@ class PersonaManagerWindow(tk.Toplevel):
         self.close_button.pack(side="right", padx=5)
 
 
-class ApiKeyWindow(tk.Toplevel):
-    """
-    A popup window for entering and saving the API key.
-    """
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.title(_("API Key Management"))
-        self.geometry("400x150")
-        self.transient(parent) # Keep this window on top of its parent
-        self.grab_set() # Grab all input focus
-
-        ttk.Label(self, text=_("Gemini API Key:")).pack(padx=10, pady=5, anchor="w")
-        self.api_key_entry = ttk.Entry(self, width=50, show="*")
-        self.api_key_entry.pack(padx=10, pady=5, fill="x", expand=True)
-
-        button_frame = ttk.Frame(self)
-        button_frame.pack(pady=10)
-
-        self.save_button = ttk.Button(button_frame, text=_("Save"))
-        self.save_button.pack(side="left", padx=5)
-        self.cancel_button = ttk.Button(button_frame, text=_("Cancel"), command=self.destroy)
-        self.cancel_button.pack(side="left", padx=5)
-
 class AppUI:
     """
     The user interface (UI) layer of the application.
@@ -409,7 +386,6 @@ class AppUI:
         # Settings Menu
         settings_menu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label=_("Settings"), menu=settings_menu)
-        settings_menu.add_command(label=_("API Key Management"), command=commands.get("open_api_key"))
         settings_menu.add_command(label=_("My Personas"), command=commands.get("open_persona_manager"))
         settings_menu.add_command(label=_("My Styles"), command=commands.get("open_style_manager"))
 

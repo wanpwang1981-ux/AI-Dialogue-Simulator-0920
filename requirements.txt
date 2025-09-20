@@ -4,3 +4,4 @@ python-docx
 openpyxl
 Babel
 PyInstaller
+python-dotenv

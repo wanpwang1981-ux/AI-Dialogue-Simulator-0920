@@ -7,6 +7,7 @@ import os
 from datetime import datetime
 import gettext
 import builtins
+from dotenv import load_dotenv
 
 # 匯入我們自己建立的模組
 from ui import AppUI, ApiKeyWindow, PersonaManagerWindow, PersonaEditorWindow, StyleManagerWindow, StyleEditorWindow, HistoryManagerWindow
@@ -17,20 +18,22 @@ import style_manager
 import output_formatter
 
 CONFIG_FILE = "config.json"
-APP_VERSION = "1.44"
+APP_VERSION = "1.5.0"
 
 # --- i18n Setup ---
-def setup_language(lang_code='en'):
+def setup_language(lang_code='zh_TW'):
     """Sets up the application's language."""
     try:
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        localedir = os.path.join(script_dir, 'locales')
-        # The name 'messages' is the standard name for the .mo file
-        lang = gettext.translation('messages', localedir=localedir, languages=[lang_code], fallback=True)
+        mo_file_path = os.path.join(script_dir, 'locales', lang_code, 'LC_MESSAGES', 'messages.mo')
+
+        with open(mo_file_path, 'rb') as f:
+            lang = gettext.GNUTranslations(f)
+
         builtins._ = lang.gettext
-    except FileNotFoundError:
-        # Fallback to a dummy function if language files are not found
-        print(f"Warning: Language file for '{lang_code}' not found. Falling back to original strings.")
+    except Exception as e:
+        # Fallback to a dummy function if any error occurs
+        print(f"Warning: Could not load language file for '{lang_code}'. Error: {e}. Falling back to original strings.")
         builtins._ = lambda s: s
 
 def get_language_from_config():
@@ -39,16 +42,16 @@ def get_language_from_config():
         try:
             with open(CONFIG_FILE, 'r') as f:
                 config = json.load(f)
-                return config.get("language", "en")
+                return config.get("language", "zh_TW")
         except (json.JSONDecodeError, IOError):
-            return "en"
-    return "en"
+            return "zh_TW"
+    return "zh_TW"
 # --- End i18n Setup ---
 
 
 class MainApp:
     """
-    主應用程式類別，負責整合UI和後端邏輯。
+    The main application class, responsible for integrating the UI and backend logic.
     """
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -57,8 +60,8 @@ class MainApp:
         except tk.TclError:
             self.root.geometry("1200x850")
 
+        # The API key is now loaded from .env, so the UI for it is removed.
         commands = {
-            "open_api_key": self.open_api_key_window,
             "open_persona_manager": self.open_persona_manager_window,
             "open_style_manager": self.open_style_manager_window,
             "open_history": self.open_history_window,
@@ -77,16 +80,19 @@ class MainApp:
         self.structured_log = []
         self.personas = []
         self.styles = []
-        self.gemini_api_key = ""
-        self.language = "en" # Default language
 
-        self.load_config()
+        # Load language from config and API key from environment
+        self.language = get_language_from_config()
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+        if self.gemini_api_key:
+            gemini_client.configure_api_key(self.gemini_api_key)
+
         self.bind_events()
         self.initialize_app()
         self.process_queue()
 
     def bind_events(self):
-        """集中綁定所有UI事件。"""
+        """Binds all UI events."""
         self.ui.start_button.config(command=self.start_conversation_thread)
         self.ui.stop_button.config(command=self.stop_conversation)
         self.ui.save_button.config(command=self.save_dialogue)
@@ -96,22 +102,9 @@ class MainApp:
         self.ui.persona2_combo.bind("<<ComboboxSelected>>", self.on_persona2_select)
         self.ui.style_combo.bind("<<ComboboxSelected>>", self.on_style_select)
 
-    def load_config(self):
-        """Loads settings from the config file, e.g., API key and language."""
-        if os.path.exists(CONFIG_FILE):
-            try:
-                with open(CONFIG_FILE, 'r') as f:
-                    config = json.load(f)
-                    self.gemini_api_key = config.get("gemini_api_key", "")
-                    if self.gemini_api_key:
-                        gemini_client.configure_api_key(self.gemini_api_key)
-                    self.language = config.get("language", "en")
-            except (json.JSONDecodeError, IOError): pass
-
     def save_config(self):
-        """Saves settings to the config file."""
+        """Saves settings (currently just language) to the config file."""
         config_data = {
-            "gemini_api_key": self.gemini_api_key,
             "language": self.language
         }
         try:
@@ -119,27 +112,6 @@ class MainApp:
                 json.dump(config_data, f, indent=4)
         except IOError as e:
             messagebox.showerror(_("Save Settings Failed"), _("Could not write to config file {}: {}").format(CONFIG_FILE, e))
-
-    # --- API Key Management ---
-    def open_api_key_window(self):
-        """Opens the API key settings window."""
-        api_window = ApiKeyWindow(self.root)
-        api_window.api_key_entry.insert(0, self.gemini_api_key)
-        api_window.save_button.config(command=lambda: self.save_api_key(api_window))
-
-    def save_api_key(self, window: ApiKeyWindow):
-        """Saves the API key and closes the window."""
-        new_key = window.api_key_entry.get().strip()
-        if new_key:
-            if gemini_client.configure_api_key(new_key):
-                self.gemini_api_key = new_key
-                self.save_config()
-                messagebox.showinfo(_("Success"), _("Gemini API key saved and verified successfully."))
-                window.destroy()
-            else:
-                messagebox.showerror(_("Validation Failed"), _("This Gemini API key is invalid. Please re-enter."), parent=window)
-        else:
-            messagebox.showwarning(_("Input Error"), _("API key cannot be empty."), parent=window)
 
     # --- Persona Management ---
     def open_persona_manager_window(self):
@@ -347,24 +319,21 @@ class MainApp:
                 return # Not a source variable we care about
 
             if source == "Gemini" and not self.gemini_api_key:
-                messagebox.showinfo(_("Configuration Required"), _("You have selected a Gemini model. Please set your API key first."))
-                self.open_api_key_window()
-                if not self.gemini_api_key: # Revert if no key was entered
-                    if ai_num == 1: self.ui.source1_var.set("Ollama")
-                    else: self.ui.source2_var.set("Ollama")
-                    return
+                messagebox.showwarning(
+                    _("API Key Missing"),
+                    _("You have selected a Gemini model, but no GEMINI_API_KEY was found. Please create a .env file with your key and restart.")
+                )
+                # Revert the source selection
+                if ai_num == 1: self.ui.source1_var.set("Ollama")
+                else: self.ui.source2_var.set("Ollama")
+                return
 
             self.update_model_list_for_ai(ai_num, source)
 
         # Case 2: Called manually (e.g., on init), update both
         else:
-            source1 = self.ui.source1_var.get()
-            source2 = self.ui.source2_var.get()
-            if (source1 == "Gemini" or source2 == "Gemini") and not self.gemini_api_key:
-                 # In init, we don't need to pop up the window, just proceed
-                 pass
-            self.update_model_list_for_ai(1, source1)
-            self.update_model_list_for_ai(2, source2)
+            self.update_model_list_for_ai(1, self.ui.source1_var.get())
+            self.update_model_list_for_ai(2, self.ui.source2_var.get())
 
     def update_model_list_for_ai(self, ai_num, source):
         """Updates the model list for a specific AI based on the source."""
@@ -676,6 +645,9 @@ class MainApp:
             )
 
 if __name__ == '__main__':
+    # Load environment variables from .env file
+    load_dotenv()
+
     # Set up language based on config before creating any UI
     lang_code = get_language_from_config()
     setup_language(lang_code)
